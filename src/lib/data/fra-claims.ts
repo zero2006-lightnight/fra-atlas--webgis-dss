@@ -1,3 +1,5 @@
+import { differenceInDays } from 'date-fns';
+
 export interface FRAClaim {
   id: string;
   claimant: string;
@@ -9,6 +11,7 @@ export interface FRAClaim {
   status: 'Pending' | 'Approved' | 'Rejected' | 'Under Review';
   priority: 'High' | 'Medium' | 'Low';
   submittedDate: string;
+  processedDate?: string;
   coordinates: [number, number];
   contactNumber: string;
 }
@@ -39,6 +42,7 @@ export const sampleClaims: FRAClaim[] = [
     status: 'Approved',
     priority: 'Medium',
     submittedDate: '2024-01-10',
+    processedDate: '2024-01-25',
     coordinates: [21.9347, 86.7337],
     contactNumber: '+91-9876543211',
   },
@@ -81,6 +85,7 @@ export const sampleClaims: FRAClaim[] = [
     status: 'Approved',
     priority: 'Low',
     submittedDate: '2024-01-05',
+    processedDate: '2024-01-20',
     coordinates: [22.4297, 80.1046],
     contactNumber: '+91-9876543214',
   },
@@ -95,6 +100,7 @@ export const sampleClaims: FRAClaim[] = [
     status: 'Rejected',
     priority: 'Low',
     submittedDate: '2023-12-28',
+    processedDate: '2024-01-10',
     coordinates: [18.8562, 82.5676],
     contactNumber: '+91-9876543215',
   },
@@ -137,6 +143,7 @@ export const sampleClaims: FRAClaim[] = [
     status: 'Approved',
     priority: 'Medium',
     submittedDate: '2024-01-12',
+    processedDate: '2024-01-22',
     coordinates: [22.0697, 78.7378],
     contactNumber: '+91-9876543218',
   },
@@ -179,4 +186,39 @@ export const getClaimStats = () => {
   const underReview = sampleClaims.filter((c) => c.status === 'Under Review').length;
 
   return { total, pending, approved, rejected, underReview };
+};
+
+export const getAverageProcessingTime = () => {
+  const processedClaims = sampleClaims.filter(
+    (claim) => (claim.status === 'Approved' || claim.status === 'Rejected') && claim.processedDate
+  );
+
+  if (processedClaims.length === 0) {
+    return 0;
+  }
+
+  const totalProcessingDays = processedClaims.reduce((total, claim) => {
+    const submitted = new Date(claim.submittedDate);
+    const processed = new Date(claim.processedDate!);
+    return total + differenceInDays(processed, submitted);
+  }, 0);
+
+  const averageTime = totalProcessingDays / processedClaims.length;
+  return parseFloat(averageTime.toFixed(1));
+};
+
+export const getStateDistribution = () => {
+  return sampleClaims.reduce((acc, claim) => {
+    if (!acc[claim.state]) {
+      acc[claim.state] = 0;
+    }
+    acc[claim.state]++;
+    return acc;
+  }, {} as Record<string, number>);
+};
+
+export const getRecentClaims = (count = 5) => {
+  return [...sampleClaims]
+    .sort((a, b) => new Date(b.submittedDate).getTime() - new Date(a.submittedDate).getTime())
+    .slice(0, count);
 };
